@@ -82,11 +82,12 @@ template<typename CharT = char>
 class ArrayStreamBuf : public StreamBuf<CharT> {
 public:
     typedef StreamBuf<CharT> Base;
-    static size_t maxSize;
+    size_t maxSize;
 
-    ArrayStreamBuf()
+    ArrayStreamBuf(int maxSize)
       : StreamBuf<CharT>()
       , bytes()
+      , maxSize(maxSize)
     {
         bytes.clear();
         Base::setg(bytes.data(), bytes.data(), bytes.data() + bytes.size());
@@ -120,8 +121,8 @@ private:
     std::vector<CharT> bytes;
 };
 
-template<typename CharT>
-size_t ArrayStreamBuf<CharT>::maxSize = Const::DefaultMaxPayload;
+//template<typename CharT>
+//size_t ArrayStreamBuf<CharT>::maxSize = Const::DefaultMaxPayload;
 
 struct Buffer {
     Buffer()

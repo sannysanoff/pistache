@@ -53,7 +53,7 @@ Endpoint::Endpoint(const Address& addr)
 void
 Endpoint::init(const Endpoint::Options& options) {
     listener.init(options.threads_, options.flags_);
-    ArrayStreamBuf<char>::maxSize = options.maxPayload_;
+//    ArrayStreamBuf<char>::maxSize = options.maxPayload_;
 }
 
 void

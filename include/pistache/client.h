@@ -38,8 +38,9 @@ struct Connection : public std::enable_shared_from_this<Connection> {
 
     using OnDone = std::function<void()>;
 
-    Connection()
+    Connection(size_t maxSize)
         : fd(-1)
+        , parser(maxSize)
         , requestEntry(nullptr) 
     {
         state_.store(static_cast<uint32_t>(State::Idle));
@@ -149,7 +150,7 @@ public:
         , maxConnectionsPerHost()
     { }
 
-    void init(size_t maxConnsPerHost);
+    void init(size_t maxConnsPerHost, size_t maxPayloadSize);
 
     std::shared_ptr<Connection> pickConnection(const std::string& domain);
     static void releaseConnection(const std::shared_ptr<Connection>& connection);
@@ -169,6 +170,7 @@ private:
     mutable Lock connsLock;
     std::unordered_map<std::string, Connections> conns;
     size_t maxConnectionsPerHost;
+    size_t maxPayloadSize;
 };
 
 class Transport : public Aio::Handler {
@@ -271,6 +273,7 @@ private:
 namespace Default {
     constexpr int Threads = 1;
     constexpr int MaxConnectionsPerHost = 8;
+    constexpr size_t MaxPayloadSize = 128000;
     constexpr bool KeepAlive = true;
 }
 
@@ -327,16 +330,19 @@ public:
        Options()
            : threads_(Default::Threads)
            , maxConnectionsPerHost_(Default::MaxConnectionsPerHost)
+           , maxPayloadSize_(Default::MaxPayloadSize)
            , keepAlive_(Default::KeepAlive)
        { }
 
        Options& threads(int val);
+       Options& maxPayloadSize(size_t val);
        Options& keepAlive(bool val);
        Options& maxConnectionsPerHost(int val);
 
    private:
        int threads_;
        int maxConnectionsPerHost_;
+       size_t maxPayloadSize_;
        bool keepAlive_;
    };
 

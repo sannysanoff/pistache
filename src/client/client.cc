@@ -115,8 +115,12 @@ namespace {
         writeCookies(streamBuf, request.cookies());
         writeHeaders(streamBuf, request.headers());
 
-        writeHeader<Http::Header::UserAgent>(streamBuf, UA);
-        writeHeader<Http::Header::Host>(streamBuf, host.toString());
+        if (!request.headers().has(Http::Header::UserAgent::Name)) {
+            writeHeader<Http::Header::UserAgent>(streamBuf, UA);
+        }
+        if (!request.headers().has(Http::Header::Host::Name)) {
+            writeHeader<Http::Header::Host>(streamBuf, host.toString());
+        }
         if (!body.empty()) {
             writeHeader<Http::Header::ContentLength>(streamBuf, body.size());
         }
@@ -291,6 +295,7 @@ Transport::handleIncoming(const std::shared_ptr<Connection>& connection) {
 
     for (;;) {
         ssize_t bytes = recv(connection->fd, buffer + totalBytes, Const::MaxBuffer - totalBytes, 0);
+        std::cout << "Transport::handleIncoming: bytes=" << bytes << std::endl;
         if (bytes == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 if (totalBytes > 0) {
@@ -304,12 +309,13 @@ Transport::handleIncoming(const std::shared_ptr<Connection>& connection) {
         else if (bytes == 0) {
             if (totalBytes > 0) {
                 handleResponsePacket(connection, buffer, totalBytes);
+                totalBytes = 0; // restart buffer
             } else {
                 connection->handleError("Remote closed connection");
+                connections.erase(connection->fd);
+                connection->close();
+                break;
             }
-            connections.erase(connection->fd);
-            connection->close();
-            break;
         }
 
         else {
@@ -540,8 +546,9 @@ Connection::processRequestQueue() {
 }
 
 void
-ConnectionPool::init(size_t maxConnsPerHost) {
+ConnectionPool::init(size_t maxConnsPerHost, size_t maxPayloadSize) {
     maxConnectionsPerHost = maxConnsPerHost;
+    this->maxPayloadSize = maxPayloadSize;
 }
 
 std::shared_ptr<Connection>
@@ -554,7 +561,7 @@ ConnectionPool::pickConnection(const std::string& domain) {
         if (poolIt == std::end(conns)) {
             Connections connections;
             for (size_t i = 0; i < maxConnectionsPerHost; ++i) {
-                connections.push_back(std::make_shared<Connection>());
+                connections.push_back(std::make_shared<Connection>(maxPayloadSize));
             }
 
             poolIt = conns.insert(std::make_pair(domain, std::move(connections))).first;
@@ -685,6 +692,12 @@ Client::Options::threads(int val) {
 }
 
 Client::Options&
+Client::Options::maxPayloadSize(size_t val) {
+    maxPayloadSize_ = val;
+    return *this;
+}
+
+Client::Options&
 Client::Options::keepAlive(bool val) {
     keepAlive_ = val;
     return *this;
@@ -717,7 +730,7 @@ Client::options() {
 
 void
 Client::init(const Client::Options& options) {
-    pool.init(options.maxConnectionsPerHost_);
+    pool.init(options.maxConnectionsPerHost_, options.maxPayloadSize_);
     reactor_->init(Aio::AsyncContext(options.threads_));
     transportKey = reactor_->addHandler(std::make_shared<Transport>());
     reactor_->run();

@@ -693,8 +693,8 @@ namespace Private {
 
     class ParserBase {
     public:
-        ParserBase()
-            : buffer()
+        ParserBase(size_t maxPayload)
+            : buffer(maxPayload)
             , cursor(&buffer)
             , allSteps()
             , currentStep(0)
@@ -727,8 +727,8 @@ namespace Private {
 
     public:
 
-        Parser()
-            : ParserBase()
+        Parser(size_t maxSize)
+            : ParserBase(maxSize)
             , request()
         {
             allSteps[0].reset(new RequestLineStep(&request));
@@ -737,7 +737,7 @@ namespace Private {
         }
 
         Parser(const char* data, size_t len)
-            : ParserBase()
+            : ParserBase(len)
             , request()
         {
             allSteps[0].reset(new RequestLineStep(&request));
@@ -761,8 +761,8 @@ namespace Private {
 
     template<> class Parser<Http::Response> : public ParserBase {
     public:
-        Parser()
-            : ParserBase()
+        Parser(size_t maxSize)
+            : ParserBase(maxSize)
             , response()
         {
             allSteps[0].reset(new ResponseLineStep(&response));
@@ -771,7 +771,7 @@ namespace Private {
         }
 
         Parser(const char* data, size_t len)
-            : ParserBase()
+            : ParserBase(len)
             , response()
         {
             allSteps[0].reset(new ResponseLineStep(&response));

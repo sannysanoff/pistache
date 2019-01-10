@@ -354,6 +354,7 @@ namespace Private {
                 message->body_.append(token.rawText(), token.size());
 
                 bytesRead += available;
+                cout << "Read total " << bytesRead << endl;
 
                 return false;
             }
@@ -794,7 +795,7 @@ Handler::onInput(const char* buffer, size_t len, const std::shared_ptr<Tcp::Peer
 
 void
 Handler::onConnection(const std::shared_ptr<Tcp::Peer>& peer) {
-    peer->putData(ParserData, std::make_shared<Private::Parser<Http::Request>>());
+    peer->putData(ParserData, std::make_shared<Private::Parser<Http::Request>>(10000000)); // not specified for this case
 }
 
 void

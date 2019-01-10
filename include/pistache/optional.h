@@ -179,6 +179,14 @@ public:
         return *this;
     }
 
+    template<typename O>
+    Optional<O> map(std::function<O(const T&)> mapper) {
+        if (isEmpty()) {
+            return None();
+        } else {
+            return Optional<O>(Some(mapper(get())));
+        }
+    }
 
     bool isEmpty() const {
         return none_flag == NoneMarker;
