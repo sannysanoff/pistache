@@ -354,7 +354,7 @@ namespace Private {
                 message->body_.append(token.rawText(), token.size());
 
                 bytesRead += available;
-                cout << "Read total " << bytesRead << endl;
+                //cout << "Read total " << bytesRead << endl;
 
                 return false;
             }

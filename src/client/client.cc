@@ -295,7 +295,7 @@ Transport::handleIncoming(const std::shared_ptr<Connection>& connection) {
 
     for (;;) {
         ssize_t bytes = recv(connection->fd, buffer + totalBytes, Const::MaxBuffer - totalBytes, 0);
-        std::cout << "Transport::handleIncoming: bytes=" << bytes << std::endl;
+       // std::cout << "Transport::handleIncoming: bytes=" << bytes << std::endl;
         if (bytes == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 if (totalBytes > 0) {
